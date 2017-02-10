@@ -155,7 +155,7 @@ class ReactTooltip extends Component {
 
     // targetArray is a NodeList, convert it to a real array
     // I hope I can use Object.values...
-    return Object.getOwnPropertyNames(targetArray).map(key => {
+    return Object.keys(targetArray).filter(key => key !== 'length').map(key => {
       return targetArray[key]
     })
   }
