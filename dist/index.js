@@ -301,7 +301,7 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
       var isEmptyTip = typeof placeholder === 'string' && placeholder === '' || placeholder === null;
 
       // If it is focus event or called by ReactTooltip.show, switch to `solid` effect
-      var switchToSolid = e.type === 'focus' || isGlobalCall;
+      var switchToSolid = isGlobalCall;
 
       // if it need to skip adding hide listener to scroll
       var scrollHide = true;
