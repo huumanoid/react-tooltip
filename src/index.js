@@ -263,7 +263,7 @@ class ReactTooltip extends Component {
     this.setState({
       placeholder,
       isEmptyTip,
-      place: e.currentTarget.getAttribute('data-place') || this.props.place || 'top',
+      place: this.getPlace(e.currentTarget),
       type: e.currentTarget.getAttribute('data-type') || this.props.type || 'dark',
       effect: switchToSolid && 'solid' || this.getEffect(e.currentTarget),
       offset: e.currentTarget.getAttribute('data-offset') || this.props.offset || {},
@@ -377,21 +377,35 @@ class ReactTooltip extends Component {
     window.removeEventListener('scroll', this.hideTooltip)
   }
 
+  getPlace(target) {
+    return target.getAttribute('data-place') || this.props.place || 'top'
+  }
+
   // Calculation the position
-  updatePosition () {
-    const {currentEvent, currentTarget, place, effect, offset} = this.state
+  updatePosition (isRecursive) {
+    const {currentEvent, currentTarget, effect, offset} = this.state
+    const place = isRecursive ? this.state.place : this.getPlace(currentTarget)
     const node = ReactDOM.findDOMNode(this)
     const result = getPosition(currentEvent, currentTarget, node, place, effect, offset)
 
     if (result.isNewState) {
       // Switch to reverse placement
       return this.setState(result.newState, () => {
-        this.updatePosition()
+        this.updatePosition(true)
       })
     }
+
     // Set tooltip position
-    node.style.left = result.position.left + 'px'
-    node.style.top = result.position.top + 'px'
+    const setPosition = () => {
+      node.style.left = result.position.left + 'px'
+      node.style.top = result.position.top + 'px'
+    }
+
+    if (this.state.place !== place) {
+      this.setState({ place }, setPosition)
+    } else {
+      setPosition()
+    }
   }
 
   /**
