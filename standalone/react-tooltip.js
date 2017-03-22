@@ -126,7 +126,7 @@ exports.default = function (target) {
 
     var listeners = this.bodyModeListeners;
     for (var event in listeners) {
-      body.removeEventListener(event, listeners(event));
+      body.removeEventListener(event, listeners[event]);
     }
   };
 };
