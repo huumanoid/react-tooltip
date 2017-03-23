@@ -417,7 +417,7 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
       disable: false
     };
 
-    _this.bind(['showTooltip', 'updateTooltip', 'hideTooltip', 'globalRebuild', 'globalShow', 'globalHide', 'onWindowResize']);
+    _this.bind(['showTooltip', 'updateTooltip', 'checkSameTarget', 'hideTooltip', 'globalRebuild', 'globalShow', 'globalHide', 'onWindowResize']);
 
     _this.mount = true;
     _this.delayShowLoop = null;
@@ -526,11 +526,12 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
           return;
         }
 
-        target.addEventListener('mouseenter', _this3.showTooltip, isCaptureMode);
+        target.addEventListener('mouseover', _this3.showTooltip, isCaptureMode);
         if (effect === 'float') {
           target.addEventListener('mousemove', _this3.updateTooltip, isCaptureMode);
         }
-        target.addEventListener('mouseleave', _this3.hideTooltip, isCaptureMode);
+        target.addEventListener('mouseout', _this3.hideTooltip, isCaptureMode);
+        target.addEventListener('DOMNodeRemovedFromDocument', _this3.checkSameTarget, isCaptureMode);
       });
 
       // Global event to hide tooltip
@@ -572,9 +573,10 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
     key: 'unbindBasicListener',
     value: function unbindBasicListener(target) {
       var isCaptureMode = this.isCapture(target);
-      target.removeEventListener('mouseenter', this.showTooltip, isCaptureMode);
+      target.removeEventListener('mouseover', this.showTooltip, isCaptureMode);
       target.removeEventListener('mousemove', this.updateTooltip, isCaptureMode);
-      target.removeEventListener('mouseleave', this.hideTooltip, isCaptureMode);
+      target.removeEventListener('mouseout', this.hideTooltip, isCaptureMode);
+      target.removeEventListener('DOMNodeRemovedFromDocument', this.checkSameTarget, isCaptureMode);
     }
 
     /**
@@ -617,7 +619,7 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
       var isEmptyTip = typeof placeholder === 'string' && placeholder === '' || placeholder === null;
 
       // If it is focus event or called by ReactTooltip.show, switch to `solid` effect
-      var switchToSolid = e instanceof window.FocusEvent || isGlobalCall;
+      var switchToSolid = e.type === 'focus' || isGlobalCall;
 
       // if it need to skip adding hide listener to scroll
       var scrollHide = true;
@@ -687,17 +689,15 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
       if (isEmptyTip || disable) return; // if the tooltip is empty, disable the tooltip
       var updateState = function updateState() {
         if (Array.isArray(placeholder) && placeholder.length > 0 || placeholder) {
-          (function () {
-            var isInvisible = !_this6.state.show;
-            _this6.setState({
-              currentEvent: e,
-              currentTarget: eventTarget,
-              show: true
-            }, function () {
-              _this6.updatePosition();
-              if (isInvisible && afterShow) afterShow();
-            });
-          })();
+          var isInvisible = !_this6.state.show;
+          _this6.setState({
+            currentEvent: e,
+            currentTarget: eventTarget,
+            show: true
+          }, function () {
+            _this6.updatePosition();
+            if (isInvisible && afterShow) afterShow();
+          });
         }
       };
 
@@ -706,6 +706,13 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
         this.delayShowLoop = setTimeout(updateState, delayTime);
       } else {
         updateState();
+      }
+    }
+  }, {
+    key: 'checkSameTarget',
+    value: function checkSameTarget(e) {
+      if (this.state.currentTarget === e.currentTarget) {
+        this.hideTooltip(e);
       }
     }
 
@@ -837,17 +844,19 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
 
       var tooltipClass = (0, _classnames2.default)('__react_component_tooltip', { 'show': this.state.show && !disable && !isEmptyTip }, { 'border': this.state.border }, { 'place-top': this.state.place === 'top' }, { 'place-bottom': this.state.place === 'bottom' }, { 'place-left': this.state.place === 'left' }, { 'place-right': this.state.place === 'right' }, { 'type-dark': this.state.type === 'dark' }, { 'type-success': this.state.type === 'success' }, { 'type-warning': this.state.type === 'warning' }, { 'type-error': this.state.type === 'error' }, { 'type-info': this.state.type === 'info' }, { 'type-light': this.state.type === 'light' });
 
-      var wrapper = ReactTooltip.supportedWrappers[this.props.wrapper];
-      if (!wrapper) wrapper = ReactTooltip.supportedWrappers['div'];
+      var Wrapper = this.props.wrapper;
+      if (ReactTooltip.supportedWrappers.indexOf(Wrapper) < 0) {
+        Wrapper = ReactTooltip.defaultProps.wrapper;
+      }
 
       if (html) {
-        return _react2.default.createElement('wrapper', _extends({ className: tooltipClass + ' ' + extraClass
+        return _react2.default.createElement(Wrapper, _extends({ className: tooltipClass + ' ' + extraClass
         }, ariaProps, {
           'data-id': 'tooltip',
           dangerouslySetInnerHTML: { __html: placeholder } }));
       } else {
         return _react2.default.createElement(
-          'wrapper',
+          Wrapper,
           _extends({ className: tooltipClass + ' ' + extraClass
           }, ariaProps, {
             'data-id': 'tooltip' }),
@@ -889,10 +898,7 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
   insecure: true,
   resizeHide: true,
   wrapper: 'div'
-}, _class2.supportedWrappers = {
-  'div': _react2.default.DOM.div,
-  'span': _react2.default.DOM.span
-}, _temp)) || _class) || _class) || _class) || _class) || _class;
+}, _class2.supportedWrappers = ['div', 'span'], _temp)) || _class) || _class) || _class) || _class) || _class;
 
 /* export default not fit for standalone, it will exports {default:...} */
 
@@ -1229,11 +1235,26 @@ var calculateOffset = function calculateOffset(offset) {
   return { extraOffset_X: extraOffset_X, extraOffset_Y: extraOffset_Y };
 };
 
+// Decide if element was transformed or not
+var isElementTransformed = function isElementTransformed(element) {
+  var computedStyles = window.getComputedStyle(element);
+  for (var prop in computedStyles) {
+    if (prop === 'transform') {
+      if (computedStyles['transform'] === 'none') {
+        return false;
+      }
+      return true;
+    }
+  }
+  return false;
+};
+
 // Get the offset of the parent elements
 var getParent = function getParent(currentTarget) {
   var currentParent = currentTarget;
+
   while (currentParent) {
-    if (window.getComputedStyle(currentParent).getPropertyValue('transform') !== 'none') break;
+    if (isElementTransformed(currentParent)) break;
     currentParent = currentParent.parentElement;
   }
 
